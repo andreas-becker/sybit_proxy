@@ -5,7 +5,7 @@
 # Args       : enable | disable
 # Author     : Andreas Becker
 # Email      : asb@sybit.de
-# Version    : 20210719.1
+# Version    : 20211007.1
 ###################################################################
 PROXY_HOST="192.168.1.254"
 PROXY_PORT="8080"
@@ -60,10 +60,15 @@ systemProp.https.proxyPort=$PROXY_PORT"
         echo "$maven_proxy" | tee $HOME/.m2/settings.xml > /dev/null
     fi
     # curl
-    if [ -f "$HOME/.curlrc.old" ]; then
-        mv $HOME/.curlrc.old $HOME/.curlrc
+    curl_proxy="proxy = ${PROXY_HTTP}"
+    if [ -f "$HOME/.curlrc" ]; then
+        if grep -q "#proxy" $HOME/.curlrc; then
+            sed -i '/#proxy/s/^#//g' $HOME/.curlrc
+        elif ! grep -q "proxy" $HOME/.curlrc; then
+            # if proxy entry is not integrated, add entry
+            echo "$curl_proxy" | tee $HOME/.curlrc > /dev/null
+        fi
     else
-        curl_proxy="proxy = ${PROXY_HTTP}"
         echo "$curl_proxy" | tee $HOME/.curlrc > /dev/null
     fi
     # npm
@@ -112,7 +117,9 @@ systemProp.https.proxyPort="
     fi
     # curl
     if [ -f "$HOME/.curlrc" ]; then
-        mv $HOME/.curlrc $HOME/.curlrc.old
+        if grep -q "proxy" $HOME/.curlrc; then
+            sed -i '/proxy/s/^/#/g' $HOME/.curlrc
+        fi
     fi
     # npm
     npm config delete proxy
